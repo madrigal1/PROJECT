@@ -1,0 +1,580 @@
+#include <iostream.h>
+#include <conio.h>
+#include <time.h>
+#include<string.h>
+#include<stdlib.h>
+#include<stdio.h>
+#include<fstream.h>
+#include<ctype.h>
+void sp(int down,int left);
+void userControlPanel(char *uname);
+void  createChatroom(char *creator);
+/* Custom encoding rules followed in file io
+   1. '-' denotes end of a field(username,pw, etc) and implies a space in output.
+   2. '.' denotes end of record (user) and implies a next line charater.
+   3. '*' denotes start  of record (user)
+   4 "_" denote data attribute spacing (space in username allwos muiltiword )
+   5."@" denotes the end of record
+   ex. *test subject-pwd-example next. is one record
+*/
+ void encode(char *attribute) {
+   for(int i = 0 ;i<strlen(attribute);i++) {
+     if(attribute[i] == ' ' || attribute[i] == '.') {
+	attribute[i] = '_';
+     }
+   }
+ }
+//message class start
+  // Sample implementation code
+
+  /* void main() {
+     clrscr();
+     message msg1;
+     msg1.inputMessage();
+     msg1.output();
+     getch();
+  } */
+
+
+//general blueprint for messages
+ class message {
+   char title[30];
+   char from[30];
+   char to[30];
+   char msg[200];
+  public:
+  int msg_status;
+  /* msg status of 1 indicates user confirmed success delivery of message
+    msg status of 0 indicates a error */
+//prototypes
+    void inputMessage();
+    void checkInput(char x[300],int max);
+    void output();
+//default constructor
+   message() {
+     strcpy(title,"error") ;
+     strcpy(from,"error");
+     strcpy(to,"error");
+     strcpy(msg,"error");
+     msg_status = 0;
+   }
+ }; //end of message class
+
+
+//validator for inputs to the message objects
+   void message::checkInput(char x[300],int max) {
+     if(!(strlen(x) <= max)) {
+      cout << "Input must be less than 30 characters";
+      msg_status = 0;
+      //add input function here.
+    }
+   }
+//Output message
+   void message :: output() {
+      cout<< endl;
+      cout << "message start" << endl;
+      puts(from) ;  cout << endl;
+      puts(to) ;    cout << endl;
+      puts(title);  cout << endl;
+      puts(msg);    cout << endl;
+      cout << "message end" << endl;
+   }
+//Input message
+   void message :: inputMessage() {
+    char ch;
+   input:
+     strcpy(from,"CurrentUser");   //Chage crt user with the logged in user
+     cout << "Input user id of reciever: " <<endl;
+     cin.getline(to,30);
+     cout << "Input title of message : " << endl;
+     cin.getline(title,30);
+     cout << "Input message : " << endl;
+     cin.getline(msg,200,'.');
+     cout << "Send ? ... (Y/N) ";
+     cin >> ch;
+    if(ch == 'Y' || ch == 'y') {
+	msg_status = 1;
+	cout << "Message send.";
+     } else {
+	goto input;
+     }
+     cout << endl;
+   }
+
+//message end
+
+//Sample implementation for user class
+/*
+void main()
+{
+	User x;
+	x.create();
+	x.login();
+	x.logout();
+	cout<<x.time();
+	getch();
+} */
+//ui designing function
+ void sp(int down, int left) {
+   for(int i =0;i<down;i++) {
+    cout << "\n";
+   }
+   for(int l =0;l<left;l++) {
+    cout << " ";
+   }
+ }
+//chatroom start
+class chatroom {
+//participants
+   char pp[10][10];
+   int max;
+  public:
+  int ppsize ;
+  chatroom() {
+    ppsize = 0;
+    max =20;
+  }
+  //custom max users
+  chatroom(int i) {
+     max =i;
+  }
+   void create(char *creator);
+//print participants
+   void printpp();
+};
+
+void chatroom :: create(char *creator) {
+   clrscr();
+   char ch;
+   char name[30];
+   char p_input[30];
+   strcpy(pp[0],creator);
+//intializing p_input  and pp size
+   strcpy(p_input,"empty");
+   cout << endl << "Create new chatroom ? (Y/N): ";
+   cin >>ch;
+   if(ch == 'Y' || ch == 'y') {
+      cout << endl << "Enter name of chatroom: ";
+      gets(name);
+   //cap on max users is 100 by defulat
+      cout << "Enter end to terminate." << endl;
+    int index;
+    for(ppsize =1,index =1;ppsize<=max;ppsize++,index++) {
+       cout << endl << "Input participant " << ppsize << ":" ;
+       gets(p_input);
+       if(strcmp(p_input,"end") == 0 || strcmp(p_input,"END") == 0) {
+	 break;
+       }else{
+	strcpy(pp[index],p_input);
+       }
+    }//end of forloop
+   } // end of Y/N if statement
+}; //endof create function;
+
+void chatroom :: printpp() {
+  cout << endl << "Participants are:" ;
+  cout << endl;
+  for(int i =0;i<ppsize-1;i++) {
+    puts(pp[i]);
+  }
+}
+//chatroom end
+
+//Users start
+  class user {
+	char username[30];
+	char pw[30];
+	char about[100];
+	float activity;
+   public:
+	float start,mins,end,seconds;
+     //default constuctor
+       void uname(char input[30]);
+       user() {
+	strcpy(username,"empty");
+	strcpy(pw,"empty");
+	strcpy(about,"empty");
+	activity = 0;
+      }
+    //start timer on login
+       void timestart() {
+	 start= time(0);
+       }
+       void writeToDb() {
+	 fstream db;
+	 db.open("users.txt",ios::out|ios::app);
+	 if(!db) {
+	  clrscr();
+	  cout << endl << "Error \n";
+	  cout << "Cannot open database of users.";
+	 }
+	 db << "*" << username << "-" << pw << "-" << about <<"."<< "\n";
+	 db.close();
+       }
+   //Create new user
+       void create()  {
+	 sp(1,2);
+	 cout << "Registration: ";
+	 cin.ignore();
+	 sp(3,2);
+	 cout<<"Enter user name: ";
+	 cin.getline(username,30);
+	 encode(username);
+	 cin.ignore(0,'\n');
+	 sp(1,2);
+	 cout<<"Enter password: ";
+	 cin.getline(pw,30);
+	 encode(pw);
+	 sp(1,2);
+	 cout << "About yourself [100 wrds max] :  " ;
+	 sp(1,2);
+	 cout << "(Terminate with .)" ;
+	 sp(1,0);
+	 cin.getline(about,100,'.');
+	 encode(about);
+	 sp(0,2);
+	 writeToDb();
+	 cout<<"Registeration complete!!";
+       }
+
+
+
+	//stop and log time on user logout
+	  void logout() {
+	    end=time(0);
+	    seconds=difftime(end,start);
+	    mins=seconds/60;
+	}
+
+};
+//intialises a temp variable with username value
+       void user :: uname(char input[30]) {
+	  for(int i =0;i<30;i++) {
+	   input[i] = username[i];
+	  }
+       }
+//User class definition end
+
+ //File io functions  Start
+   int getFileSize(char f[30]) {
+    ifstream file(f, ios::in | ios::binary);
+    if(!file) {
+     return -1;
+    }
+    file.seekg(0, ios::end);
+    int fileSize = file.tellg();
+    file.close();
+
+    return fileSize;
+   }
+
+//reads the .txt file database
+   void readDb(char file[30]) {
+     clrscr();
+     int count =0; ///for users.txt
+      int pp_count=0; // for chatrrom.txt
+     int char_count =0 ; // for chatroom buffer
+     cout << "DB:" << endl;
+       fstream	db;
+       db.open(file,ios::in | ios::binary);
+       if(!db) {
+	cerr << "Db link error. Contact Creator";
+       } else {
+    //If db link successful
+	int fs = getFileSize("users.txt");
+      for(int i =0;i<fs;i++) {
+	 char i;  //temp char buffer
+	 db >> i;  //adds the input into the input stream
+       //checking for eof
+       if(db.eof()) {
+	 break;
+       }
+       if(!isalpha(i)) {
+	 switch(i) {
+	  case '-' :
+	  //if we are accessing the user db
+	   if(strcmp(file,"users.txt") == 0) {
+	    sp(1,2);
+	   } else {
+	    pp_count++;
+	   }//end of else
+	   break;
+	  case '*':
+	   pp_count =0; //reset
+	   char_count = 0;
+	   //no of the record i.e first chatroom second chatroom etc.
+	   count++;
+	   cout << count ;
+	   sp(0,1); //needed as part of count and chatrrom name
+	    break;
+	  case '.':
+	   cout << endl;
+	   break;
+	  case '_':
+	   cout << " ";
+	   break;
+	  default:
+	   cout << " ";
+	   break;
+	 }   //end of switch
+       } else {
+	  if(pp_count ==0){
+	    if(strcmp(file,"chatrooms.txt") == 0){
+	      int pointer = count - 1;
+	      chatrooms[pointer][char_count] = i;
+	      char_count++;
+	      cout << i;
+	     } else {
+	      cout << i;
+	     }
+	   } else {
+	    if(strcmp(file,"users.txt") ==0) {
+	     cout << i;
+	    } else {
+	     continue;
+	    }
+	  }
+       }//end of else
+      }//end of for loop
+      db.close();
+      cout << endl;
+      if(strcmp(file,"users.txt") == 0) {
+      cout << "No of users: " << count;
+      }
+     }//end of file check
+    }
+//end of read db function
+
+
+//Checks for user presence in Db
+  int DbQuery(char uname[30],char pwd[30]) {
+     clrscr();
+      /*
+       in a single cycle(i.e pointer goes from * to next * [one record])
+       two - symbols are encountered for start and end of password
+       A cycle:
+	1. * - indicates start of cycle
+	     pointer is reset
+	2. all characters are filled into buffer A
+	3. First - is encountered, pointer is reset ,query is made
+	   and characters therafter are placed in buffer B
+	     - if query unsuccessful the cycle is terminated
+	       and pointer reset
+	4. second - encountered terminates the cycle
+	   pointer is reset and buffer A is intiated
+      */
+
+     /*
+      States
+	s_counter
+	  0- not processing, searching for *
+	  1- processing to a buffer
+       a_counter
+	  0- name is getting filled up from input stream
+	  1- pw is getting filled from input strem
+     */
+       char name[30] ;  //buffer A
+       char pw[30] ;    //buffer B
+       int pointer =0;
+       int s_counter =0;
+       int a_counter =0;
+       int flag =0;
+       fstream	db;
+       db.open("users.txt",ios::in | ios::binary);
+       if(!db) {
+	cerr << "Db link error. Contact Creator";
+       } else {
+    //If db link successful
+	int fs = getFileSize("users.txt");
+      for(int i =0;i<fs;i++) {
+	 char i;  //temp char buffer
+	 db >> i;  //i intilized with temp val
+       //checking for eof
+       if(db.eof()) {
+	 break;
+       }
+       if(!isalpha(i)) {
+	  if(i == '*') {
+	  memset(name,'\0',30);
+	  memset(pw,'\0',30);
+	  pointer =0;
+	    if(s_counter == 0) {
+	     s_counter =1;
+	    } else {
+	     s_counter =0;
+	     a_counter =0;
+	    }
+	  } else if(i == '-') {
+	    if(a_counter == 0) {
+	    //DEBUGGING
+	     /* clrscr();
+	      cout << name << "  " << uname <<endl ;
+	      getch();  */
+	      if(strcmp(name,uname) != 0) {
+		s_counter =0;
+		a_counter =0;
+		//debuggin code
+	     /*	cout << "user name does not match record";
+		getch();*/
+		continue;
+	      } else {
+	       //deBUGGING code	cout << "match found";
+		a_counter++;
+		memset(name,'\0',pointer);
+		memset(pw,'\0',pointer);
+		pointer = 0;
+		continue;
+	      }
+	    }else { //A!=0
+	     //debuggin code
+	     /*
+	      cout << " " << pw << "  org password  " << pwd << endl ;
+	      getch(); */
+	       if(strcmp(pwd,pw) != 0) {
+		clrscr();
+		cout << "Wrong password";
+		getch();
+		break;
+	       } else {
+		 //sucessfull username and password match
+		 clrscr();
+		 flag =1;
+		 break;
+	       }
+	    } //end of '-' handling code
+	  } else if(i == '_') {
+	    if(s_counter == 0) {
+	     continue;
+	    } else {
+	      if(a_counter ==0) {
+		name[pointer] = ' ';
+		pointer++;
+	      }  else {
+		pw[pointer] = ' ';
+		pointer++;
+	      }
+	    }
+	  }
+       } else {
+	  if(a_counter == 0) {
+	   name[pointer] = i;
+	   pointer++;
+	  } else {
+	   pw[pointer] = i;
+	   pointer++;
+	  }
+       }//end of else
+      }//end of for loop
+    }//end of file check
+    return flag;
+  }
+
+
+ // FIle io end
+
+
+ //homescreen functionilty start
+   void existingUser() {
+    //login screen
+    clrscr();
+    char uname[30];
+    char pwd[30];
+    sp(1,2);
+     cout << "Login: ";
+     cin.ignore();
+     sp(3,2);
+     cout<<"Enter user name: ";
+     cin.getline(uname,30);
+     cin.ignore(0,'\n');
+     sp(1,2);
+     cout<<"Enter password: ";
+     cin.getline(pwd,30);
+     sp(1,2);
+     int res = DbQuery(uname,pwd);
+      if(!res) {
+	clrscr();
+	cout << "The username " << uname << "does not exist";
+      } else {
+	userControlPanel(uname);
+      }
+     getch();
+   }
+
+ //User Menu Screen
+     void userControlPanel(char *uname) {
+      int ch ;
+      //rewind point
+      controlPanel:
+      sp(1,1);
+      cout << "Welcome back, " << uname;
+      sp(3,3);
+      cout << "1.Create Chatroom" ;
+      sp(2,3);
+      cout << "2.Join Chatroom";
+      sp(2,3);
+      cout << "Input ch number: " ;
+      cin >> ch;
+      if(ch == 1 ) {
+       createChatroom(uname);
+      } else if(ch == 2) {
+       //
+      } else {
+       goto controlPanel;
+      }
+     }
+  //User Registration
+   void newUser() {
+    user newUser;
+    clrscr();
+    newUser.create();
+   }
+
+ //create Chatroom
+   void createChatroom(char *c) {
+    chatroom chat;
+    chat.create(c);
+   }
+
+ //homescreen end
+
+ void main() {
+   clrscr();
+   int user_ch;
+  //Homescreen
+    sp(1,0);
+    cout << "LAN Messenger:";
+    sp(3,3);
+    cout << "1.New User" ;
+    sp(1,3);
+    cout << "2.Existing user";
+    sp(1,3);
+    cout << "3.Settings";
+    sp(2,3);
+    cout << "Input path no. ";
+    cin >> user_ch;
+    if(user_ch == 1) {
+   //User Regstration path
+     newUser();
+    }else if(user_ch == 2) {
+     existingUser();
+    }else if(user_ch == 3) {
+   //Admin Backend path
+      clrscr();
+      cout << "Welcome to admin settings:" << endl;
+      cout << "Input pwd : ";
+      char pwd[10];
+      gets(pwd);
+      if(!strcmp(pwd,"admin") || !strcmp(pwd,"ADMIN")){
+	readDb("users.txt");
+      } else {
+	cout << "Wrong password";
+      }
+    }else {
+     clrscr();
+     cout << "Invalid choice" << endl;
+     cout << "Restart app";
+    }
+
+   getch();
+ }
+
